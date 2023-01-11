@@ -286,7 +286,7 @@ int powerctrl_rcc_clock_config_pll(RCC_ClkInitTypeDef *rcc_init, uint32_t sysclk
 
 #endif
 
-#if !defined(STM32F0) && !defined(STM32G0) && !defined(STM32L0) && !defined(STM32L1) && !defined(STM32L4)
+#if !defined(STM32F0) && !defined(STM32G0) && !defined(STM32L0) && !defined(STM32L1) && !defined(STM32L4) && !defined(STM32U5)
 
 STATIC uint32_t calc_ahb_div(uint32_t wanted_div) {
     #if defined(STM32H7)
@@ -708,7 +708,7 @@ void powerctrl_enter_stop_mode(void) {
     __HAL_RCC_WAKEUPSTOP_CLK_CONFIG(RCC_STOP_WAKEUPCLOCK_MSI);
     #endif
 
-    #if !defined(STM32F0) && !defined(STM32G0) && !defined(STM32G4) && !defined(STM32L0) && !defined(STM32L1) && !defined(STM32L4) && !defined(STM32WB) && !defined(STM32WL)
+    #if !defined(STM32F0) && !defined(STM32G0) && !defined(STM32G4) && !defined(STM32L0) && !defined(STM32L1) && !defined(STM32L4) && !defined(STM32WB) && !defined(STM32WL) && !defined(STM32U5)
     // takes longer to wake but reduces stop current
     HAL_PWREx_EnableFlashPowerDown();
     #endif
@@ -779,6 +779,7 @@ void powerctrl_enter_stop_mode(void) {
 
     // enable PLL
     __HAL_RCC_PLL_ENABLE();
+    #if !defined(STM32U5)
     while (!__HAL_RCC_GET_FLAG(RCC_FLAG_PLLRDY)) {
     }
 
@@ -794,6 +795,14 @@ void powerctrl_enter_stop_mode(void) {
     while (__HAL_RCC_GET_SYSCLK_SOURCE() != RCC_CFGR_SWS_PLL) {
     }
     #endif
+    #else // !defined(STM32U5)
+    while (!__HAL_RCC_GET_FLAG(RCC_FLAG_PLL1RDY)) {
+    }
+    // select PLL as system clock source
+    MODIFY_REG(RCC->CFGR1, RCC_CFGR1_SWS, RCC_SYSCLKSOURCE_PLLCLK);
+    while (__HAL_RCC_GET_SYSCLK_SOURCE() != RCC_SYSCLKSOURCE_STATUS_PLLCLK) {
+    }
+    #endif // !defined(STM32U5)
 
     powerctrl_disable_hsi_if_unused();
 
@@ -859,7 +868,8 @@ void powerctrl_enter_stop_mode(void) {
     #if defined(STM32H7) || \
     defined(STM32F427xx) || defined(STM32F437xx) || \
     defined(STM32F429xx) || defined(STM32F439xx) || \
-    defined(STM32WB55xx) || defined(STM32WB35xx)
+    defined(STM32WB55xx) || defined(STM32WB35xx) || \
+    defined(STM32U575xx)
     // Enable SysTick Interrupt
     SysTick->CTRL |= SysTick_CTRL_TICKINT_Msk;
     #endif
@@ -901,7 +911,7 @@ void powerctrl_enter_standby_mode(void) {
     #elif defined(STM32G0) || defined(STM32G4) || defined(STM32WL)
     #define CR_BITS (RTC_CR_ALRAIE | RTC_CR_ALRBIE | RTC_CR_WUTIE | RTC_CR_TSIE)
     #define ISR_BITS (RTC_MISR_ALRAMF | RTC_MISR_ALRBMF | RTC_MISR_WUTMF | RTC_MISR_TSMF)
-    #elif defined(STM32H7A3xx) || defined(STM32H7A3xxQ) || defined(STM32H7B3xx) || defined(STM32H7B3xxQ)
+    #elif defined(STM32H7A3xx) || defined(STM32H7A3xxQ) || defined(STM32H7B3xx) || defined(STM32H7B3xxQ) || defined(STM32U5)
     #define CR_BITS (RTC_CR_ALRAIE | RTC_CR_ALRBIE | RTC_CR_WUTIE | RTC_CR_TSIE)
     #define SR_BITS (RTC_SR_ALRAF | RTC_SR_ALRBF | RTC_SR_WUTF | RTC_SR_TSF)
     #else
@@ -922,7 +932,7 @@ void powerctrl_enter_standby_mode(void) {
     // clear RTC wake-up flags
     #if defined(SR_BITS)
     RTC->SR &= ~SR_BITS;
-    #elif defined(STM32G0) || defined(STM32G4) || defined(STM32WL)
+    #elif defined(STM32G0) || defined(STM32G4) || defined(STM32WL) || defined(STM32U5)
     RTC->MISR &= ~ISR_BITS;
     #else
     RTC->ISR &= ~ISR_BITS;
@@ -955,6 +965,9 @@ void powerctrl_enter_standby_mode(void) {
     #elif defined(STM32WL)
     // clear all wake-up flags
     PWR->SCR |= PWR_SCR_CWUF3 | PWR_SCR_CWUF2 | PWR_SCR_CWUF1;
+    #elif defined(STM32U5)
+    // clear all wake-up flags
+    PWR->WUSCR |= PWR_WUSCR_CWUF1 | PWR_WUSCR_CWUF2 | PWR_WUSCR_CWUF3 | PWR_WUSCR_CWUF4 | PWR_WUSCR_CWUF5 | PWR_WUSCR_CWUF6 | PWR_WUSCR_CWUF7 | PWR_WUSCR_CWUF8;
     #else
     // clear global wake-up flag
     PWR->CR |= PWR_CR_CWUF;

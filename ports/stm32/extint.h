@@ -34,6 +34,7 @@
 // Use the following constants for the internal sources:
 
 #define EXTI_PVD_OUTPUT         (16)
+#if !defined(STM32U5)
 #if defined(STM32L4)
 #define EXTI_RTC_ALARM          (18)
 #define EXTI_USB_OTG_FS_WAKEUP  (17)
@@ -59,6 +60,11 @@
 #if defined(STM32F7)
 #define EXTI_LPTIM1_ASYNC_EVENT (23)
 #endif
+#else
+// STM32U5 doesn't have EXTI RTC WAKEUP but we need it in the RTC feature
+// so use any number outside the list
+#define EXTI_RTC_WAKEUP         (23)
+#endif // !defined(STM32U5)
 
 #define EXTI_NUM_VECTORS        (PYB_EXTI_NUM_VECTORS)
 

@@ -98,7 +98,7 @@ const spi_t spi_obj[6] = {
     #endif
 };
 
-#if defined(STM32H7)
+#if defined(STM32H7) || defined(STM32U5)
 // STM32H7 HAL requires SPI IRQs to be enabled and handled.
 #if defined(MICROPY_HW_SPI1_SCK)
 void SPI1_IRQHandler(void) {
@@ -226,6 +226,15 @@ STATIC uint32_t spi_get_source_freq(SPI_HandleTypeDef *spi) {
         return HAL_RCCEx_GetPeriphCLKFreq(RCC_PERIPHCLK_SPI45);
     } else {
         return HAL_RCCEx_GetPeriphCLKFreq(RCC_PERIPHCLK_SPI6);
+    }
+    #elif defined(STM32U5)
+    if (spi->Instance == SPI1) {
+        return HAL_RCCEx_GetPeriphCLKFreq(RCC_PERIPHCLK_SPI1);
+    } else
+    if (spi->Instance == SPI2) {
+        return HAL_RCCEx_GetPeriphCLKFreq(RCC_PERIPHCLK_SPI2);
+    } else {
+        return HAL_RCCEx_GetPeriphCLKFreq(RCC_PERIPHCLK_SPI3);
     }
     #else
     #if defined(SPI2)
@@ -424,7 +433,7 @@ void spi_init(const spi_t *self, bool enable_nss_pin) {
     dma_invalidate_channel(self->tx_dma_descr);
     dma_invalidate_channel(self->rx_dma_descr);
 
-    #if defined(STM32H7)
+    #if defined(STM32H7) || defined(STM32U5)
     NVIC_SetPriority(irqn, IRQ_PRI_SPI);
     HAL_NVIC_EnableIRQ(irqn);
     #else

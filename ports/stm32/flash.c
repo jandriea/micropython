@@ -129,6 +129,11 @@ static const flash_layout_t flash_layout[] = {
     { 0x08000000, 0x20000, 16 },
 };
 
+#elif defined(STM32U5)
+static const flash_layout_t flash_layout[] = {
+    { 0x08000000, (uint32_t)FLASH_PAGE_SIZE, 128 },
+    { 0x08100000, (uint32_t)FLASH_PAGE_SIZE, 128 }
+};
 #else
 #error Unsupported processor
 #endif
@@ -193,6 +198,21 @@ static uint32_t get_bank(uint32_t addr) {
         #else
         return 0;
         #endif
+    }
+}
+
+#elif defined(STM32U5)
+
+static uint32_t get_page(uint32_t addr) {
+    return (addr - FLASH_BASE) / FLASH_PAGE_SIZE;
+}
+
+static uint32_t get_bank(uint32_t addr) {
+    // no bank swap
+    if (addr < (FLASH_BASE + FLASH_BANK_SIZE)) {
+        return FLASH_BANK_1;
+    } else {
+        return FLASH_BANK_2;
     }
 }
 
@@ -280,7 +300,7 @@ int flash_erase(uint32_t flash_dest, uint32_t num_word32) {
     EraseInitStruct.TypeErase = FLASH_TYPEERASE_PAGES;
     EraseInitStruct.Page = get_page(flash_dest);
     EraseInitStruct.NbPages = (4 * num_word32 + FLASH_PAGE_SIZE - 4) / FLASH_PAGE_SIZE;
-    #elif defined(STM32L4)
+    #elif defined(STM32L4) || defined(STM32U5)
     __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_ALL_ERRORS);
     // The sector returned by flash_get_sector_info can not be used
     // as the flash has on each bank 0/1 pages 0..255
@@ -430,6 +450,17 @@ int flash_write(uint32_t flash_dest, const uint32_t *src, uint32_t num_word32) {
         while (__HAL_FLASH_GET_FLAG(FLASH_FLAG_CFGBSY)) {
         }
         #endif
+    }
+
+    #elif defined(STM32U5)
+    // program the flash 128 bits at a time
+    for (int i = 0; i < num_word32 / 4; i++) {
+        status = HAL_FLASH_Program(FLASH_TYPEPROGRAM_QUADWORD, flash_dest, (uint64_t)(uint32_t)src);
+        if (status != HAL_OK) {
+            break;
+        }
+        flash_dest += 16;
+        src += 4;
     }
 
     #elif defined(STM32H7)

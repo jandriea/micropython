@@ -79,7 +79,7 @@
 #include "boardctrl.h"
 #include "powerctrl.h"
 
-#if defined(STM32F4) || defined(STM32F7) || defined(STM32G4) || defined(STM32H7) || defined(STM32L4)
+#if defined(STM32F4) || defined(STM32F7) || defined(STM32G4) || defined(STM32H7) || defined(STM32L4) || defined(STM32U5)
 
 /**
   * @brief  System Clock Configuration
@@ -116,6 +116,22 @@
   *            PLL_Q                          = 2
   *            PLL_R                          = 2 <= This is the source for SysClk, not as on F4/7 PLL_P
   *            Flash Latency(WS)              = 4
+  *         The system Clock is configured for U5 as follows:
+  *            System Clock source            = PLL (MSI)
+  *            SYSCLK(Hz)                     = 160000000
+  *            HCLK(Hz)                       = 160000000
+  *            AHB Prescaler                  = 1
+  *            APB1 Prescaler                 = 1
+  *            APB2 Prescaler                 = 1
+  *            APB3 Prescaler                 = 1
+  *            MSI Frequency(Hz)              = MSI_VALUE (4000000)
+  *            LSE Frequency(Hz)              = 32768
+  *            PLL_M                          = 1
+  *            PLL_N                          = 80
+  *            PLL_P                          = 2
+  *            PLL_Q                          = 2
+  *            PLL_R                          = 2 <= This is the source for SysClk, not as on F4/7 PLL_P
+  *            Flash Latency(WS)              = 4
   * @param  None
   * @retval None
   *
@@ -123,13 +139,13 @@
   *
   *     VCO_IN
   *         F4/F7 = HSx / M
-  *         L4    = MSI / M
+  *         L4/U5 = MSI / M
   *     VCO_OUT
   *         F4/F7 = HSx / M * N
-  *         L4    = MSI / M * N
+  *         L4/U5 = MSI / M * N
   *     PLLCLK
   *         F4/F7 = HSx / M * N / P
-  *         L4    = MSI / M * N / R
+  *         L4/U5 = MSI / M * N / R
   *     PLL48CK
   *         F4/F7 = HSx / M * N / Q
   *         L4    = MSI / M * N / Q  USB Clock is obtained over PLLSAI1
@@ -139,26 +155,45 @@
   *     PCLKx  = HCLK / APBx_PRESC
   *
   * Constraints on parameters:
+  *     U5
+  *         VCO_IN between 4MHz and 8MHz
+  *         VCO_OUT between 128MHz and 544MHz
+  *         HSE = 8MHz
+  *         HSI = 16MHz
+  *         M = 1 .. 16 (inclusive)
+  *         N = 4 ... 512 (inclusive)
+  *         P = 1 .. 128 (inclusive)
+  *         Q = 1 .. 128 (inclusive)
   *
-  *     VCO_IN between 1MHz and 2MHz (2MHz recommended)
-  *     VCO_OUT between 192MHz and 432MHz
-  *     HSE = 8MHz
-  *     HSI = 16MHz
-  *     M = 2 .. 63 (inclusive)
-  *     N = 192 ... 432 (inclusive)
-  *     P = 2, 4, 6, 8
-  *     Q = 2 .. 15 (inclusive)
+  *     Others
+  *         VCO_IN between 1MHz and 2MHz (2MHz recommended)
+  *         VCO_OUT between 192MHz and 432MHz
+  *         HSE = 8MHz
+  *         HSI = 16MHz
+  *         M = 2 .. 63 (inclusive)
+  *         N = 192 ... 432 (inclusive)
+  *         P = 2, 4, 6, 8
+  *         Q = 2 .. 15 (inclusive)
   *
   *     AHB_PRESC=1,2,4,8,16,64,128,256,512
   *     APBx_PRESC=1,2,4,8,16
   *
   * Output clocks:
   *
-  * CPU             SYSCLK      max 168MHz
-  * USB,RNG,SDIO    PLL48CK     must be 48MHz for USB
-  * AHB             HCLK        max 168MHz
-  * APB1            PCLK1       max 42MHz
-  * APB2            PCLK2       max 84MHz
+  * U5
+  *     CPU             SYSCLK      max 160MHz
+  *     USB,RNG,SDIO    HSI48       must be 48MHz for USB
+  *     AHB             HCLK        max 160MHz
+  *     APB1            PCLK1       max 160MHz
+  *     APB2            PCLK2       max 160MHz
+  *     APB3            PCLK2       max 160MHz
+  *
+  * Others
+  *     CPU             SYSCLK      max 168MHz
+  *     USB,RNG,SDIO    PLL48CK     must be 48MHz for USB
+  *     AHB             HCLK        max 168MHz
+  *     APB1            PCLK1       max 42MHz
+  *     APB2            PCLK2       max 84MHz
   *
   * Timers run from APBx if APBx_PRESC=1, else 2x APBx
   */
@@ -172,7 +207,7 @@ MP_WEAK void SystemClock_Config(void) {
 
     RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
     RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-    #if defined(STM32G4) || defined(STM32H7)
+    #if defined(STM32G4) || defined(STM32H7) || defined(STM32U5)
     RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
     #endif
 
@@ -224,6 +259,11 @@ MP_WEAK void SystemClock_Config(void) {
     #elif defined(STM32L4)
     // Configure LSE Drive Capability
     __HAL_RCC_LSEDRIVE_CONFIG(RCC_LSEDRIVE_LOW);
+    #elif defined(STM32U5)
+    // enable the clock
+    __PWR_CLK_ENABLE();
+    // Configure the main internal regulator output voltage
+    HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1);
     #endif
 
     #if defined(STM32H7)
@@ -299,12 +339,56 @@ MP_WEAK void SystemClock_Config(void) {
     RCC_OscInitStruct.PLL.PLLR = MICROPY_HW_CLK_PLLR;
     #endif
 
+    #if defined(STM32U5)
+    #if MICROPY_HW_CLK_USE_HSE
+    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+    RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+    RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+    RCC_OscInitStruct.PLL.PLLM = MICROPY_HW_CLK_PLLM;
+    RCC_OscInitStruct.PLL.PLLN = MICROPY_HW_CLK_PLLN;
+    RCC_OscInitStruct.PLL.PLLP = MICROPY_HW_CLK_PLLP;
+    RCC_OscInitStruct.PLL.PLLQ = MICROPY_HW_CLK_PLLQ;
+    RCC_OscInitStruct.PLL.PLLR = MICROPY_HW_CLK_PLLR;
+    RCC_OscInitStruct.MSIState = RCC_MSI_OFF;
+    #else
+    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_MSI | RCC_OSCILLATORTYPE_HSI48;
+    RCC_OscInitStruct.MSIState = RCC_MSI_ON;
+    RCC_OscInitStruct.MSICalibrationValue = RCC_MSICALIBRATION_DEFAULT;
+    RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_4;
+    RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_MSI;
+    RCC_OscInitStruct.PLL.PLLMBOOST = RCC_PLLMBOOST_DIV1;
+    RCC_OscInitStruct.PLL.PLLM = MICROPY_HW_CLK_PLLM;
+    RCC_OscInitStruct.PLL.PLLN = MICROPY_HW_CLK_PLLN;
+    RCC_OscInitStruct.PLL.PLLP = MICROPY_HW_CLK_PLLP;
+    RCC_OscInitStruct.PLL.PLLQ = MICROPY_HW_CLK_PLLQ;
+    RCC_OscInitStruct.PLL.PLLR = MICROPY_HW_CLK_PLLR;
+    RCC_OscInitStruct.PLL.PLLRGE = RCC_PLLVCIRANGE_0;
+    RCC_OscInitStruct.PLL.PLLFRACN = 0;
+    #endif
+
+    #if MICROPY_HW_RTC_USE_LSE
+    RCC_OscInitStruct.OscillatorType |= RCC_OSCILLATORTYPE_LSE;
+    RCC_OscInitStruct.LSEState = RCC_LSE_ON;
+    #else
+    RCC_OscInitStruct.LSEState = RCC_LSE_OFF;
+    #endif
+
+    #if MICROPY_HW_CLK_USE_HSI48
+    RCC_OscInitStruct.OscillatorType |= RCC_OSCILLATORTYPE_HSI48;
+    RCC_OscInitStruct.HSI48State = RCC_HSI48_ON;
+    #else
+    RCC_OscInitStruct.HSI48State = RCC_HSI48_OFF;
+    #endif
+    #endif
+
     RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
     /* Select PLL as system clock source and configure the HCLK, PCLK1 and PCLK2
      clocks dividers */
     RCC_ClkInitStruct.ClockType = (RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2);
     #if defined(STM32H7)
     RCC_ClkInitStruct.ClockType |= (RCC_CLOCKTYPE_D3PCLK1 | RCC_CLOCKTYPE_D1PCLK1);
+    #elif defined(STM32U5)
+    RCC_ClkInitStruct.ClockType |= RCC_CLOCKTYPE_PCLK3;
     #endif
 
     #if defined(MICROPY_HW_CLK_LAST_FREQ) && MICROPY_HW_CLK_LAST_FREQ
@@ -354,7 +438,7 @@ MP_WEAK void SystemClock_Config(void) {
     RCC_OscInitStruct.PLL.PLLN = MICROPY_HW_CLK_PLLN;
     RCC_OscInitStruct.PLL.PLLP = MICROPY_HW_CLK_PLLP;
     RCC_OscInitStruct.PLL.PLLQ = MICROPY_HW_CLK_PLLQ;
-    #if defined(STM32G4) || defined(STM32H7) || defined(STM32L4)
+    #if defined(STM32G4) || defined(STM32H7) || defined(STM32L4) || defined(STM32U5)
     RCC_OscInitStruct.PLL.PLLR = MICROPY_HW_CLK_PLLR;
     #endif
 
@@ -377,6 +461,12 @@ MP_WEAK void SystemClock_Config(void) {
     RCC_ClkInitStruct.AHBCLKDivider = MICROPY_HW_CLK_AHB_DIV;
     RCC_ClkInitStruct.APB1CLKDivider = MICROPY_HW_CLK_APB1_DIV;
     RCC_ClkInitStruct.APB2CLKDivider = MICROPY_HW_CLK_APB2_DIV;
+    #elif defined(STM32U5)
+    RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+    RCC_ClkInitStruct.AHBCLKDivider = MICROPY_HW_CLK_AHB_DIV;
+    RCC_ClkInitStruct.APB1CLKDivider = MICROPY_HW_CLK_APB1_DIV;
+    RCC_ClkInitStruct.APB2CLKDivider = MICROPY_HW_CLK_APB2_DIV;
+    RCC_ClkInitStruct.APB3CLKDivider = MICROPY_HW_CLK_APB3_DIV;
     #elif defined(STM32H7)
     RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
     RCC_ClkInitStruct.SYSCLKDivider = RCC_SYSCLK_DIV1;
@@ -582,6 +672,38 @@ MP_WEAK void SystemClock_Config(void) {
     HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
     NVIC_SetPriority(SysTick_IRQn, NVIC_EncodePriority(NVIC_PRIORITYGROUP_4, TICK_INT_PRIORITY, 0));
     #endif
+
+    #if defined(STM32U5)
+    /* Configure the System Power */
+    HAL_PWREx_EnableVddIO2();
+    // Switch to SMPS regulator instead of LDO
+    if (HAL_PWREx_ConfigSupply(PWR_SMPS_SUPPLY) != HAL_OK) {
+        MICROPY_BOARD_FATAL_ERROR("HAL_PWREx_ConfigSupply");
+    }
+
+    PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_ADCDAC
+        | RCC_PERIPHCLK_USART1 | RCC_PERIPHCLK_USART2 | RCC_PERIPHCLK_USART3
+        | RCC_PERIPHCLK_UART4 | RCC_PERIPHCLK_UART5 | RCC_PERIPHCLK_LPUART1
+        | RCC_PERIPHCLK_RTC | RCC_PERIPHCLK_RNG
+        | RCC_PERIPHCLK_SPI1 | RCC_PERIPHCLK_SPI2 | RCC_PERIPHCLK_SPI3
+        | RCC_PERIPHCLK_ICLK;
+
+    // ICLK for USB clk use HSI48
+    PeriphClkInitStruct.IclkClockSelection = RCC_ICLK_CLKSOURCE_HSI48;
+    // ADC and DAC use AHB clock
+    PeriphClkInitStruct.AdcDacClockSelection = RCC_ADCDACCLKSOURCE_HCLK;
+    // RTC clock use LSE
+    PeriphClkInitStruct.RTCClockSelection = RCC_RTCCLKSOURCE_LSE;
+    // RNG clock use HSI48
+    PeriphClkInitStruct.RngClockSelection = RCC_RNGCLKSOURCE_HSI48;
+    // USART1 and SPI1 use system clock
+    PeriphClkInitStruct.Usart1ClockSelection = RCC_USART1CLKSOURCE_SYSCLK;
+    PeriphClkInitStruct.Spi1ClockSelection = RCC_SPI1CLKSOURCE_SYSCLK;
+
+    if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK) {
+        MICROPY_BOARD_FATAL_ERROR("HAL_RCCEx_PeriphCLKConfig");
+    }
+    #endif // defined(STM32U5)
 
     #if defined(STM32H7) && !defined(NDEBUG)
     // Enable the Debug Module in low-power modes.

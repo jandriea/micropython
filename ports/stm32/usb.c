@@ -61,7 +61,7 @@
 // Maximum number of endpoints (excluding EP0)
 #if defined(STM32L0) || defined(STM32WB)
 #define MAX_ENDPOINT(dev_id) (7)
-#elif defined(STM32L4)
+#elif defined(STM32L4) || defined(STM32U5)
 #define MAX_ENDPOINT(dev_id) (5)
 #elif defined(STM32F4)
 #define MAX_ENDPOINT(dev_id) ((dev_id) == USB_PHY_FS_ID ? 3 : 5)

@@ -434,6 +434,15 @@
 #define MICROPY_HW_MAX_UART (2)
 #define MICROPY_HW_MAX_LPUART (1)
 
+#elif defined(STM32U5)
+
+#define MP_HAL_UNIQUE_ID_ADDRESS (UID_BASE)
+#define PYB_EXTI_NUM_VECTORS (24)
+#define MICROPY_HW_MAX_I2C (4)
+#define MICROPY_HW_MAX_TIMER (17)
+#define MICROPY_HW_MAX_UART (5)
+#define MICROPY_HW_MAX_LPUART (1)
+
 #else
 #error Unsupported MCU series
 #endif

@@ -137,6 +137,11 @@ extern const dma_descr_t dma_SDIO_0;
 extern const dma_descr_t dma_I2C_4_TX;
 extern const dma_descr_t dma_I2C_4_RX;
 
+#elif defined(STM32U5)
+
+extern const dma_descr_t dma_SPI_1_RX;
+extern const dma_descr_t dma_SPI_1_TX;
+
 #endif
 
 // API that configures the DMA via the HAL.

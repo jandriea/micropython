@@ -234,6 +234,17 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 // respective APB clock.  See DM00031020 Rev 4, page 115.
 uint32_t timer_get_source_freq(uint32_t tim_id) {
     uint32_t source, clk_div;
+    #if defined(STM32U5)
+    if (2 <= tim_id && tim_id <= 7) {
+        // TIM{2,3,4,5,6,7} are on APB1 Reg 1
+        source = HAL_RCC_GetPCLK1Freq();
+        clk_div = RCC->CFGR2 & RCC_CFGR2_PPRE1;
+    } else {
+        // TIM{1,8,15,16,17} are on APB2
+        source = HAL_RCC_GetPCLK2Freq();
+        clk_div = RCC->CFGR2 & RCC_CFGR2_PPRE2;
+    }
+    #else
     if (tim_id == 1 || (8 <= tim_id && tim_id <= 11)) {
         // TIM{1,8,9,10,11} are on APB2
         #if defined(STM32F0) || defined(STM32G0)
@@ -262,6 +273,7 @@ uint32_t timer_get_source_freq(uint32_t tim_id) {
         clk_div = RCC->CFGR & RCC_CFGR_PPRE1;
         #endif
     }
+    #endif // defined(STM32U5)
     if (clk_div != 0) {
         // APB prescaler for this timer is > 1
         source *= 2;
@@ -482,7 +494,7 @@ STATIC void config_deadtime(pyb_timer_obj_t *self, mp_int_t ticks, mp_int_t brk)
     deadTimeConfig.DeadTime = compute_dtg_from_ticks(ticks);
     deadTimeConfig.BreakState = brk == BRK_OFF ? TIM_BREAK_DISABLE : TIM_BREAK_ENABLE;
     deadTimeConfig.BreakPolarity = brk == BRK_LOW ? TIM_BREAKPOLARITY_LOW : TIM_BREAKPOLARITY_HIGH;
-    #if defined(STM32F7) || defined(STM32G0) || defined(STM32G4) || defined(STM32H7) || defined(STM32L4) || defined(STM32WB)
+    #if defined(STM32F7) || defined(STM32G0) || defined(STM32G4) || defined(STM32H7) || defined(STM32L4) || defined(STM32WB) || defined(STM32U5)
     deadTimeConfig.BreakFilter = 0;
     deadTimeConfig.Break2State = TIM_BREAK_DISABLE;
     deadTimeConfig.Break2Polarity = TIM_BREAKPOLARITY_LOW;
@@ -808,7 +820,7 @@ STATIC const uint32_t tim_instance_table[MICROPY_HW_MAX_TIMER] = {
     TIM_ENTRY(1, TIM1_BRK_UP_TRG_COM_IRQn),
     #elif defined(STM32F4) || defined(STM32F7)
     TIM_ENTRY(1, TIM1_UP_TIM10_IRQn),
-    #elif defined(STM32H7)
+    #elif defined(STM32H7) || defined(STM32U5)
     TIM_ENTRY(1, TIM1_UP_IRQn),
     #elif defined(STM32G4) || defined(STM32L4) || defined(STM32WB)
     TIM_ENTRY(1, TIM1_UP_TIM16_IRQn),
@@ -833,7 +845,7 @@ STATIC const uint32_t tim_instance_table[MICROPY_HW_MAX_TIMER] = {
     TIM_ENTRY(5, TIM5_IRQn),
     #endif
     #if defined(TIM6)
-    #if defined(STM32F412Zx) || defined(STM32L1)
+    #if defined(STM32F412Zx) || defined(STM32L1) || defined(STM32U5)
     TIM_ENTRY(6, TIM6_IRQn),
     #elif defined(STM32G0)
     TIM_ENTRY(6, TIM6_DAC_LPTIM1_IRQn),
@@ -853,7 +865,7 @@ STATIC const uint32_t tim_instance_table[MICROPY_HW_MAX_TIMER] = {
     #if defined(TIM8)
     #if defined(STM32F4) || defined(STM32F7) || defined(STM32H7)
     TIM_ENTRY(8, TIM8_UP_TIM13_IRQn),
-    #elif defined(STM32G4) || defined(STM32L4)
+    #elif defined(STM32G4) || defined(STM32L4) || defined(STM32U5)
     TIM_ENTRY(8, TIM8_UP_IRQn),
     #endif
     #endif
@@ -890,7 +902,7 @@ STATIC const uint32_t tim_instance_table[MICROPY_HW_MAX_TIMER] = {
     TIM_ENTRY(14, TIM8_TRG_COM_TIM14_IRQn),
     #endif
     #if defined(TIM15)
-    #if defined(STM32F0) || defined(STM32G0) || defined(STM32H7)
+    #if defined(STM32F0) || defined(STM32G0) || defined(STM32H7) || defined(STM32U5)
     TIM_ENTRY(15, TIM15_IRQn),
     #else
     TIM_ENTRY(15, TIM1_BRK_TIM15_IRQn),
@@ -899,7 +911,7 @@ STATIC const uint32_t tim_instance_table[MICROPY_HW_MAX_TIMER] = {
     #if defined(TIM16)
     #if defined(STM32G0B1xx) || defined(STM32G0C1xx)
     TIM_ENTRY(16, TIM16_FDCAN_IT0_IRQn),
-    #elif defined(STM32F0) || defined(STM32G0) || defined(STM32H7) || defined(STM32WL)
+    #elif defined(STM32F0) || defined(STM32G0) || defined(STM32H7) || defined(STM32WL) || defined(STM32U5)
     TIM_ENTRY(16, TIM16_IRQn),
     #else
     TIM_ENTRY(16, TIM1_UP_TIM16_IRQn),
@@ -908,7 +920,7 @@ STATIC const uint32_t tim_instance_table[MICROPY_HW_MAX_TIMER] = {
     #if defined(TIM17)
     #if defined(STM32G0B1xx) || defined(STM32G0C1xx)
     TIM_ENTRY(17, TIM17_FDCAN_IT1_IRQn),
-    #elif defined(STM32F0) || defined(STM32G0) || defined(STM32H7) || defined(STM32WL)
+    #elif defined(STM32F0) || defined(STM32G0) || defined(STM32H7) || defined(STM32WL) || defined(STM32U5)
     TIM_ENTRY(17, TIM17_IRQn),
     #else
     TIM_ENTRY(17, TIM1_TRG_COM_TIM17_IRQn),

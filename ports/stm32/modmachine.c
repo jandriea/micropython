@@ -64,7 +64,7 @@
 #define RCC_CSR_BORRSTF RCC_CSR_PORRSTF
 #endif
 
-#if defined(STM32G4) || defined(STM32L4) || defined(STM32WB) || defined(STM32WL)
+#if defined(STM32G4) || defined(STM32L4) || defined(STM32WB) || defined(STM32WL) || defined(STM32U5)
 // L4 does not have a POR, so use BOR instead
 #define RCC_CSR_PORRSTF RCC_CSR_BORRSTF
 #endif
@@ -131,6 +131,12 @@ void machine_init(void) {
         // came out of standby
         reset_cause = PYB_RESET_DEEPSLEEP;
         PWR->EXTSCR |= PWR_EXTSCR_C1CSSF;
+    } else
+    #elif defined(STM32U5)
+    if (PWR->SR & PWR_SR_SBF) {
+        // came out of standby
+        reset_cause = PYB_RESET_DEEPSLEEP;
+        PWR->SR |= PWR_SR_CSSF;
     } else
     #endif
     {
@@ -310,7 +316,7 @@ STATIC mp_obj_t machine_freq(size_t n_args, const mp_obj_t *args) {
         return mp_obj_new_tuple(MP_ARRAY_SIZE(tuple), tuple);
     } else {
         // set
-        #if defined(STM32F0) || defined(STM32L0) || defined(STM32L1) || defined(STM32L4) || defined(STM32G0)
+        #if defined(STM32F0) || defined(STM32L0) || defined(STM32L1) || defined(STM32L4) || defined(STM32G0) || defined(STM32U5)
         mp_raise_NotImplementedError(MP_ERROR_TEXT("machine.freq set not supported yet"));
         #else
         mp_int_t sysclk = mp_obj_get_int(args[0]);

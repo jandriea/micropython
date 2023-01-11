@@ -1,0 +1,5 @@
+{
+    "mcu": "stm32u5",
+    "product": "Nucleo U575ZI-Q",
+    "vendor": "ST Microelectronics"
+}

@@ -50,6 +50,9 @@ SUPPORTS_HARDWARE_FP_DOUBLE = 1
 else
 ifeq ($(MCU_SERIES),$(filter $(MCU_SERIES),f0 g0 l0 l1 wl))
 CFLAGS_CORTEX_M += -msoft-float
+else ifeq ($(MCU_SERIES),$(filter $(MCU_SERIES),u5))
+CFLAGS_CORTEX_M += -mfpu=fpv5-sp-d16 -mfloat-abi=hard
+SUPPORTS_HARDWARE_FP_SINGLE = 1
 else
 CFLAGS_CORTEX_M += -mfpu=fpv4-sp-d16 -mfloat-abi=hard
 SUPPORTS_HARDWARE_FP_SINGLE = 1
@@ -69,6 +72,7 @@ CFLAGS_MCU_l4 = $(CFLAGS_CORTEX_M) -mtune=cortex-m4 -mcpu=cortex-m4
 CFLAGS_MCU_h7 = $(CFLAGS_CORTEX_M) -mtune=cortex-m7 -mcpu=cortex-m7
 CFLAGS_MCU_wb = $(CFLAGS_CORTEX_M) -mtune=cortex-m4 -mcpu=cortex-m4
 CFLAGS_MCU_wl = $(CFLAGS_CORTEX_M) -mtune=cortex-m4 -mcpu=cortex-m4
+CFLAGS_MCU_u5 = $(CFLAGS_CORTEX_M) -mtune=cortex-m33 -mcpu=cortex-m33
 
 MPY_CROSS_MCU_ARCH_f0 = armv6m
 MPY_CROSS_MCU_ARCH_f4 = armv7m
@@ -81,3 +85,4 @@ MPY_CROSS_MCU_ARCH_l4 = armv7m
 MPY_CROSS_MCU_ARCH_h7 = armv7m
 MPY_CROSS_MCU_ARCH_wb = armv7m
 MPY_CROSS_MCU_ARCH_wl = armv7m
+MPY_CROSS_MCU_ARCH_u5 = armv7m  # TODO: Change this to armv8m later

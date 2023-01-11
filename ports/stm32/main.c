@@ -301,9 +301,11 @@ void stm32_main(uint32_t reset_mode) {
     SCB->VTOR = MICROPY_HW_VTOR;
     #endif
 
+    #if !defined(STM32U5)
+    // M33 does not have SCB_CCR_STKALIGN_Msk in CCR register
     // Enable 8-byte stack alignment for IRQ handlers, in accord with EABI
     SCB->CCR |= SCB_CCR_STKALIGN_Msk;
-
+    #endif
     // Hook for a board to run code at start up, for example check if a
     // bootloader should be entered instead of the main application.
     MICROPY_BOARD_STARTUP();
@@ -343,6 +345,10 @@ void stm32_main(uint32_t reset_mode) {
     __HAL_FLASH_PREFETCH_BUFFER_ENABLE();
     #endif
 
+    #elif defined(STM32U5)
+    #if PREFETCH_ENABLE
+    __HAL_FLASH_PREFETCH_BUFFER_ENABLE();
+    #endif
     #endif
 
     mpu_init();
@@ -375,6 +381,12 @@ void stm32_main(uint32_t reset_mode) {
     __HAL_RCC_D2SRAM1_CLK_ENABLE();
     __HAL_RCC_D2SRAM2_CLK_ENABLE();
     __HAL_RCC_D2SRAM3_CLK_ENABLE();
+    #elif defined(STM32U5)
+    // enable the SRAM clocks
+    __HAL_RCC_SRAM1_CLK_ENABLE();
+    __HAL_RCC_SRAM2_CLK_ENABLE();
+    __HAL_RCC_SRAM3_CLK_ENABLE();
+    __HAL_RCC_SRAM4_CLK_ENABLE();
     #endif
 
     MICROPY_BOARD_EARLY_INIT();
