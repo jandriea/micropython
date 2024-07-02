@@ -95,7 +95,7 @@ void HAL_PCD_MspInit(PCD_HandleTypeDef *hpcd) {
         const uint32_t otg_alt = GPIO_AF0_USB;
         #elif defined(STM32L432xx)
         const uint32_t otg_alt = GPIO_AF10_USB_FS;
-        #elif defined(STM32H5) || defined(STM32WB)
+        #elif defined(STM32H5) || defined(STM32WB) || defined(STM32U5)
         const uint32_t otg_alt = GPIO_AF10_USB;
         #else
         const uint32_t otg_alt = GPIO_AF10_OTG_FS;

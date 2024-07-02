@@ -52,7 +52,7 @@ void powerctrl_config_systick(void) {
     SysTick_Config(HAL_RCC_GetHCLKFreq() / 1000);
     NVIC_SetPriority(SysTick_IRQn, IRQ_PRI_SYSTICK);
 
-    #if !BUILDING_MBOOT && (defined(STM32H5) || defined(STM32H7) || defined(STM32L4) || defined(STM32WB))
+    #if !BUILDING_MBOOT && (defined(STM32H5) || defined(STM32H7) || defined(STM32L4) || defined(STM32WB) || defined(STM32U5))
     // Set SysTick IRQ priority variable in case the HAL needs to use it
     uwTickPrio = IRQ_PRI_SYSTICK;
     #endif
@@ -562,6 +562,97 @@ void SystemClock_Config(void) {
 
     SystemCoreClockUpdate();
     powerctrl_config_systick();
+}
+
+#elif defined(STM32U5)
+void SystemClock_Config(void) {
+    // configure the power control
+    __HAL_RCC_PWR_CLK_ENABLE();
+    HAL_PWREx_EnableVddA();
+    // configure the NVIC priority group
+    HAL_NVIC_SetPriorityGrouping(NVIC_PRIORITYGROUP_3);
+
+    // configure the power voltage scale
+    LL_PWR_SetRegulVoltageScaling(LL_PWR_REGU_VOLTAGE_SCALE1);
+    while (LL_PWR_IsActiveFlag_VOS() == 0) {
+    }
+    #if MICROPY_HW_CLK_USE_HSI
+    LL_RCC_HSI_Enable();
+    while (!LL_RCC_HSI_IsReady()) {
+    }
+    const uint32_t pll1_source = LL_RCC_PLL1SOURCE_HSI;
+    #elif MICROPY_HW_CLK_USE_HSE
+    LL_RCC_HSE_Enable();
+    while (!LL_RCC_HSE_IsReady()) {
+    }
+    const uint32_t pll1_source = LL_RCC_PLL1SOURCE_HSE;
+    #else
+    LL_RCC_MSIS_Enable();
+    while (!LL_RCC_MSIS_IsReady()) {
+    }
+    LL_RCC_MSI_EnableRangeSelection();
+    LL_RCC_MSIS_SetRange(LL_RCC_MSISRANGE_4);
+    LL_RCC_MSI_SetCalibTrimming(16, LL_RCC_MSI_OSCILLATOR_1);
+    const uint32_t pll1_source = LL_RCC_PLL1SOURCE_MSIS;
+    #endif
+
+    // configure PLL1 for use as system clock.
+    LL_RCC_PLL1_ConfigDomain_SYS(pll1_source, MICROPY_HW_CLK_PLLM, MICROPY_HW_CLK_PLLN, MICROPY_HW_CLK_PLLP);
+    LL_RCC_PLL1_SetFRACN(MICROPY_HW_CLK_PLLFRAC);
+    LL_RCC_PLL1_EnableDomain_SYS();
+    LL_RCC_SetPll1EPodPrescaler(LL_RCC_PLL1MBOOST_DIV_1);
+    LL_RCC_PLL1_SetVCOInputRange(LL_RCC_PLLINPUTRANGE_4_8);
+    LL_RCC_PLL1_Enable();
+    while (!LL_RCC_PLL1_IsReady()) {
+    }
+    
+    // Intermediate AHB prescaler 2 when target frequency clock is higher than 80 MHz
+    LL_RCC_SetAHBPrescaler(LL_RCC_SYSCLK_DIV_2);   
+
+    // Configure the flash latency before switching the system clock source.
+    __HAL_FLASH_SET_LATENCY(MICROPY_HW_FLASH_LATENCY);
+    while (__HAL_FLASH_GET_LATENCY() != MICROPY_HW_FLASH_LATENCY) {
+    }
+
+    // Switch the system clock source to PLL1P.
+    LL_RCC_SetSysClkSource(LL_RCC_SYS_CLKSOURCE_PLL1);
+    while (LL_RCC_GetSysClkSource() != LL_RCC_SYS_CLKSOURCE_STATUS_PLL1) {
+    }
+
+    // Insure 1us transition state at intermediate medium speed clock
+    for (__IO uint32_t i = (160 >> 1); i !=0; i--);
+    // configure bus driver
+    LL_RCC_SetAHBPrescaler(MICROPY_HW_CLK_AHB_DIV);
+    LL_RCC_SetAPB1Prescaler(MICROPY_HW_CLK_APB1_DIV);
+    LL_RCC_SetAPB2Prescaler(MICROPY_HW_CLK_APB2_DIV);
+    LL_RCC_SetAPB3Prescaler(MICROPY_HW_CLK_APB3_DIV);
+    
+    // Reconfigure clock state and SysTick.
+    SystemCoreClockUpdate();
+    powerctrl_config_systick();
+
+    #if MICROPY_HW_ENABLE_USB
+    // configure HSI48
+    LL_RCC_HSI_SetCalibTrimming(16);
+    LL_RCC_HSI48_Enable();
+    while(LL_RCC_HSI48_IsReady() != 1){
+    }
+    // Select HSI48 for USB clock source
+    LL_RCC_SetUSBClockSource(LL_RCC_USB_CLKSOURCE_HSI48);
+    // Peripheral clock enable
+    __HAL_RCC_USB_CLK_ENABLE();
+    /* Enable VDDUSB */
+    if(__HAL_RCC_PWR_IS_CLK_DISABLED())
+    {
+      __HAL_RCC_PWR_CLK_ENABLE();
+      HAL_PWREx_EnableVddUSB();
+      __HAL_RCC_PWR_CLK_DISABLE();
+    }
+    else
+    {
+      HAL_PWREx_EnableVddUSB();
+    }
+    #endif
 }
 
 #endif

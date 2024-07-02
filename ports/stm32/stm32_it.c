@@ -328,6 +328,12 @@ void USB_LP_IRQHandler(void) {
 }
 #endif
 
+#elif defined(STM32U5)
+
+void OTG_FS_IRQHandler(void) {
+    HAL_PCD_IRQHandler(&pcd_fs_handle);
+}
+
 #else
 
 /**
@@ -556,7 +562,7 @@ void TAMP_STAMP_IRQHandler(void) {
 }
 #endif
 
-#if defined(STM32H5)
+#if defined(STM32H5) || defined(STM32U5)
 void RTC_IRQHandler(void)
 #else
 void RTC_WKUP_IRQHandler(void)
@@ -565,7 +571,7 @@ void RTC_WKUP_IRQHandler(void)
     IRQ_ENTER(RTC_WKUP_IRQn);
     #if defined(STM32G0) || defined(STM32G4) || defined(STM32WL)
     RTC->MISR &= ~RTC_MISR_WUTMF; // clear wakeup interrupt flag
-    #elif defined(STM32H5)
+    #elif defined(STM32H5) || defined(STM32U5)
     RTC->SCR = RTC_SCR_CWUTF; // clear wakeup interrupt flag
     #elif defined(STM32H7A3xx) || defined(STM32H7A3xxQ) || defined(STM32H7B3xx) || defined(STM32H7B3xxQ)
     RTC->SR &= ~RTC_SR_WUTF; // clear wakeup interrupt flag
