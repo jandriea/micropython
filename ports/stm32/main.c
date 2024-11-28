@@ -367,6 +367,12 @@ void stm32_main(uint32_t reset_mode) {
     __HAL_FLASH_PREFETCH_BUFFER_ENABLE();
     #endif
 
+    #elif defined(STM32U5)
+    #if PREFETCH_ENABLE
+    __HAL_FLASH_PREFETCH_BUFFER_ENABLE();
+    #endif
+    HAL_ICACHE_ConfigAssociativityMode(ICACHE_1WAY);
+    HAL_ICACHE_Enable();
     #endif
 
     mpu_init();

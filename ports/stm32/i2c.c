@@ -270,12 +270,12 @@ int i2c_write(i2c_t *i2c, const uint8_t *src, size_t len, size_t next_len) {
     return num_acks;
 }
 
-#elif defined(STM32F0) || defined(STM32F7) || defined(STM32H7) || defined(STM32L4)
+#elif defined(STM32F0) || defined(STM32F7) || defined(STM32H7) || defined(STM32L4) || defined(STM32U5)
 
 #if defined(STM32H7)
 #define APB1ENR            APB1LENR
 #define RCC_APB1ENR_I2C1EN RCC_APB1LENR_I2C1EN
-#elif defined(STM32L4)
+#elif defined(STM32L4) || defined(STM32U5)
 #define APB1ENR            APB1ENR1
 #define RCC_APB1ENR_I2C1EN RCC_APB1ENR1_I2C1EN
 #if defined(STM32L432xx)
@@ -337,6 +337,17 @@ int i2c_init(i2c_t *i2c, mp_hal_pin_obj_t scl, mp_hal_pin_obj_t sda, uint32_t fr
         i2c->TIMINGR = 0x00702991;
     } else if (freq >= 100000) {
         i2c->TIMINGR = 0x10909CEC;
+    } else {
+        return -MP_EINVAL;
+    }
+    #elif defined(STM32U5)
+    // These timing values are with f_I2CCLK=160MHz and are only approximate
+    if (freq >= 1000000) {
+        i2c->TIMINGR = 0x00701F6B;
+    } else if (freq >= 400000) {
+        i2c->TIMINGR = 0x00F07BFF;
+    } else if (freq >= 100000) {
+        i2c->TIMINGR = 0x30909DEC;
     } else {
         return -MP_EINVAL;
     }
@@ -515,7 +526,7 @@ int i2c_write(i2c_t *i2c, const uint8_t *src, size_t len, size_t next_len) {
 
 #endif
 
-#if defined(STM32F0) || defined(STM32F4) || defined(STM32F7) || defined(STM32H7)
+#if defined(STM32F0) || defined(STM32F4) || defined(STM32F7) || defined(STM32H7) || defined(STM32U5)
 
 int i2c_readfrom(i2c_t *i2c, uint16_t addr, uint8_t *dest, size_t len, bool stop) {
     int ret;

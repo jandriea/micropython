@@ -61,7 +61,7 @@
 // Maximum number of endpoints (excluding EP0)
 #if defined(STM32G0) || defined(STM32G4) || defined(STM32H5) || defined(STM32L0) || defined(STM32L1) || defined(STM32WB)
 #define MAX_ENDPOINT(dev_id) (7)
-#elif defined(STM32L4)
+#elif defined(STM32L4) || defined(STM32U5)
 #define MAX_ENDPOINT(dev_id) (5)
 #elif defined(STM32F4)
 #define MAX_ENDPOINT(dev_id) ((dev_id) == USB_PHY_FS_ID ? 3 : 5)
@@ -292,11 +292,11 @@ bool pyb_usb_dev_init(int dev_id, uint16_t vid, uint16_t pid, uint8_t mode, size
             msc_n = 1;
             msc_unit = msc_unit_default;
             switch (pyb_usb_storage_medium) {
-                #if MICROPY_HW_ENABLE_SDCARD
+            #if MICROPY_HW_ENABLE_SDCARD
                 case PYB_USB_STORAGE_MEDIUM_SDCARD:
                     msc_unit_default[0] = &pyb_sdcard_type;
                     break;
-                #endif
+            #endif
                 default:
                     msc_unit_default[0] = &pyb_flash_type;
                     break;

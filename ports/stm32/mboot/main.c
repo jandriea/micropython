@@ -379,6 +379,9 @@ void SystemClock_Config(void) {
 #elif defined(STM32H5) || defined(STM32WB)
 #define AHBxENR AHB2ENR
 #define AHBxENR_GPIOAEN_Pos RCC_AHB2ENR_GPIOAEN_Pos
+#elif defined(STM32U5)
+#define AHBxENR AHB2ENR1
+#define AHBxENR_GPIOAEN_Pos RCC_AHB2ENR1_GPIOAEN_Pos
 #endif
 
 void mp_hal_pin_config(mp_hal_pin_obj_t port_pin, uint32_t mode, uint32_t pull, uint32_t alt) {
@@ -410,7 +413,7 @@ void mp_hal_pin_config_speed(uint32_t port_pin, uint32_t speed) {
 
 #define FLASH_START (FLASH_BASE)
 
-#if defined(STM32G0) || defined(STM32H5)
+#if defined(STM32G0) || defined(STM32H5) || defined(STM32U5)
 #define FLASH_END (FLASH_BASE + FLASH_SIZE - 1)
 #elif defined(STM32WB)
 #define FLASH_END FLASH_END_ADDR
@@ -442,6 +445,8 @@ void mp_hal_pin_config_speed(uint32_t port_pin, uint32_t speed) {
 #define FLASH_LAYOUT_STR "@Internal Flash  /0x08000000/01*128Kg" MBOOT_SPIFLASH_LAYOUT MBOOT_SPIFLASH2_LAYOUT
 #elif defined(STM32WB)
 #define FLASH_LAYOUT_STR "@Internal Flash  /0x08000000/256*04Kg" MBOOT_SPIFLASH_LAYOUT MBOOT_SPIFLASH2_LAYOUT
+#elif defined(STM32U5)
+#define FLASH_LAYOUT_TEMPLATE "@Internal Flash  /0x09000000/???*08Kg" MBOOT_SPIFLASH_LAYOUT MBOOT_SPIFLASH2_LAYOUT
 #endif
 
 #if !defined(FLASH_LAYOUT_STR)
@@ -452,7 +457,11 @@ void mp_hal_pin_config_speed(uint32_t port_pin, uint32_t speed) {
 static size_t build_flash_layout_str(char *buf) {
     size_t len = FLASH_LAYOUT_STR_ALLOC - 1;
     memcpy(buf, FLASH_LAYOUT_TEMPLATE, len + 1);
+    #if defined(STM32U5)
+    unsigned int num_sectors = FLASH_SIZE / FLASH_PAGE_SIZE;
+    #else
     unsigned int num_sectors = FLASH_SIZE / FLASH_SECTOR_SIZE;
+    #endif
     buf += 31; // location of "???" in FLASH_LAYOUT_TEMPLATE
     for (unsigned int i = 0; i < 3; ++i) {
         *buf-- = '0' + num_sectors % 10;
@@ -779,7 +788,7 @@ void i2c_slave_process_rx_end(i2c_slave_t *i2c) {
         len = strlen(FLASH_LAYOUT_STR);
         memcpy(buf, FLASH_LAYOUT_STR, len);
         #else
-        len = build_flash_layout_str(buf);
+        len = build_flash_layout_str((char *)buf);
         #endif
     } else if (buf[0] == I2C_CMD_MASSERASE && len == 0) {
         len = do_mass_erase();

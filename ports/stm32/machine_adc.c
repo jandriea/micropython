@@ -30,7 +30,7 @@
 #include "py/mphal.h"
 #include "adc.h"
 
-#if defined(STM32F0) || defined(STM32G0) || defined(STM32G4) || defined(STM32H5) || defined(STM32H7) || defined(STM32L0) || defined(STM32L4) || defined(STM32WB) || defined(STM32WL)
+#if defined(STM32F0) || defined(STM32G0) || defined(STM32G4) || defined(STM32H5) || defined(STM32H7) || defined(STM32L0) || defined(STM32L4) || defined(STM32WB) || defined(STM32WL) || defined(STM32U5)
 #define ADC_V2 (1)
 #else
 #define ADC_V2 (0)
@@ -40,7 +40,7 @@
 #define ADCx_COMMON ADC_COMMON_REGISTER(0)
 #elif defined(STM32F7)
 #define ADCx_COMMON ADC123_COMMON
-#elif defined(STM32L4)
+#elif defined(STM32L4) || defined(STM32U5)
 #define ADCx_COMMON __LL_ADC_COMMON_INSTANCE(0)
 #endif
 
@@ -85,6 +85,9 @@
 #elif defined(STM32L4) || defined(STM32WB)
 #define ADC_SAMPLETIME_DEFAULT      ADC_SAMPLETIME_12CYCLES_5
 #define ADC_SAMPLETIME_DEFAULT_INT  ADC_SAMPLETIME_247CYCLES_5
+#elif defined(STM32U5)
+#define ADC_SAMPLETIME_DEFAULT      ADC_SAMPLETIME_12CYCLES
+#define ADC_SAMPLETIME_DEFAULT_INT  ADC_SAMPLETIME_391CYCLES
 #endif
 
 // Timeout for waiting for end-of-conversion
@@ -253,7 +256,7 @@ void adc_config(ADC_TypeDef *adc, uint32_t bits) {
         // ADC isn't enabled so calibrate it now
         #if defined(STM32F0) || defined(STM32G0) || defined(STM32L0) || defined(STM32WL)
         LL_ADC_StartCalibration(adc);
-        #elif defined(STM32G4) || defined(STM32H5) || defined(STM32L4) || defined(STM32WB)
+        #elif defined(STM32G4) || defined(STM32H5) || defined(STM32L4) || defined(STM32WB) || defined(STM32U5)
         LL_ADC_StartCalibration(adc, LL_ADC_SINGLE_ENDED);
         #else
         LL_ADC_StartCalibration(adc, LL_ADC_CALIB_OFFSET_LINEARITY, LL_ADC_SINGLE_ENDED);
@@ -320,6 +323,8 @@ static int adc_get_bits(ADC_TypeDef *adc) {
     uint32_t res = (adc->CR1 & ADC_CR1_RES) >> ADC_CR1_RES_Pos;
     #elif defined(STM32G4) || defined(STM32H5) || defined(STM32H7) || defined(STM32L4) || defined(STM32WB)
     uint32_t res = (adc->CFGR & ADC_CFGR_RES) >> ADC_CFGR_RES_Pos;
+    #elif defined(STM32U5)
+    uint32_t res = (adc->CFGR1 & ADC_CFGR1_RES) >> ADC_CFGR1_RES_Pos;
     #endif
     return adc_cr_to_bits_table[res];
 }
@@ -494,24 +499,24 @@ uint32_t adc_config_and_read_u16(ADC_TypeDef *adc, uint32_t channel, uint32_t sa
 
 #if defined(ADC_CHANNEL_VBAT)
 #define MICROPY_PY_MACHINE_ADC_CLASS_CONSTANTS_CORE_VBAT \
-    { MP_ROM_QSTR(MP_QSTR_CORE_VBAT), MP_ROM_INT(MACHINE_ADC_INT_CH_VBAT) },
+        { MP_ROM_QSTR(MP_QSTR_CORE_VBAT), MP_ROM_INT(MACHINE_ADC_INT_CH_VBAT) },
 #else
 #define MICROPY_PY_MACHINE_ADC_CLASS_CONSTANTS_CORE_VBAT
 #endif
 
 #if defined(ADC_CHANNEL_VDDCORE)
 #define MICROPY_PY_MACHINE_ADC_CLASS_CONSTANTS_CORE_VDD \
-    { MP_ROM_QSTR(MP_QSTR_CORE_VDD), MP_ROM_INT(MACHINE_ADC_INT_CH_VDDCORE) },
+        { MP_ROM_QSTR(MP_QSTR_CORE_VDD), MP_ROM_INT(MACHINE_ADC_INT_CH_VDDCORE) },
 #else
 #define MICROPY_PY_MACHINE_ADC_CLASS_CONSTANTS_CORE_VDD
 #endif
 
 #define MICROPY_PY_MACHINE_ADC_CLASS_CONSTANTS \
-    { MP_ROM_QSTR(MP_QSTR_VREF), MP_ROM_INT(MACHINE_ADC_CH_VREF) }, \
-    { MP_ROM_QSTR(MP_QSTR_CORE_VREF), MP_ROM_INT(MACHINE_ADC_INT_CH_VREFINT) }, \
-    { MP_ROM_QSTR(MP_QSTR_CORE_TEMP), MP_ROM_INT(MACHINE_ADC_INT_CH_TEMPSENSOR) }, \
-    MICROPY_PY_MACHINE_ADC_CLASS_CONSTANTS_CORE_VBAT \
-    MICROPY_PY_MACHINE_ADC_CLASS_CONSTANTS_CORE_VDD \
+        { MP_ROM_QSTR(MP_QSTR_VREF), MP_ROM_INT(MACHINE_ADC_CH_VREF) }, \
+        { MP_ROM_QSTR(MP_QSTR_CORE_VREF), MP_ROM_INT(MACHINE_ADC_INT_CH_VREFINT) }, \
+        { MP_ROM_QSTR(MP_QSTR_CORE_TEMP), MP_ROM_INT(MACHINE_ADC_INT_CH_TEMPSENSOR) }, \
+        MICROPY_PY_MACHINE_ADC_CLASS_CONSTANTS_CORE_VBAT \
+        MICROPY_PY_MACHINE_ADC_CLASS_CONSTANTS_CORE_VDD \
 
 typedef struct _machine_adc_obj_t {
     mp_obj_base_t base;

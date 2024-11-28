@@ -328,6 +328,12 @@ void USB_LP_IRQHandler(void) {
 }
 #endif
 
+#elif defined(STM32U5)
+
+void OTG_FS_IRQHandler(void) {
+    HAL_PCD_IRQHandler(&pcd_fs_handle);
+}
+
 #else
 
 /**
@@ -487,6 +493,74 @@ void EXTI4_IRQHandler(void) {
     IRQ_EXIT(EXTI4_IRQn);
 }
 
+#if defined(STM32U5)
+void EXTI5_IRQHandler(void) {
+    IRQ_ENTER(EXTI5_IRQn);
+    Handle_EXTI_Irq(5);
+    IRQ_EXIT(EXTI5_IRQn);
+}
+
+void EXTI6_IRQHandler(void) {
+    IRQ_ENTER(EXTI6_IRQn);
+    Handle_EXTI_Irq(6);
+    IRQ_EXIT(EXTI6_IRQn);
+}
+
+void EXTI7_IRQHandler(void) {
+    IRQ_ENTER(EXTI7_IRQn);
+    Handle_EXTI_Irq(7);
+    IRQ_EXIT(EXTI7_IRQn);
+}
+
+void EXTI8_IRQHandler(void) {
+    IRQ_ENTER(EXTI8_IRQn);
+    Handle_EXTI_Irq(8);
+    IRQ_EXIT(EXTI8_IRQn);
+}
+
+void EXTI9_IRQHandler(void) {
+    IRQ_ENTER(EXTI9_IRQn);
+    Handle_EXTI_Irq(9);
+    IRQ_EXIT(EXTI9_IRQn);
+}
+
+void EXTI10_IRQHandler(void) {
+    IRQ_ENTER(EXTI10_IRQn);
+    Handle_EXTI_Irq(10);
+    IRQ_EXIT(EXTI10_IRQn);
+}
+
+void EXTI11_IRQHandler(void) {
+    IRQ_ENTER(EXTI11_IRQn);
+    Handle_EXTI_Irq(11);
+    IRQ_EXIT(EXTI11_IRQn);
+}
+
+void EXTI12_IRQHandler(void) {
+    IRQ_ENTER(EXTI12_IRQn);
+    Handle_EXTI_Irq(12);
+    IRQ_EXIT(EXTI12_IRQn);
+}
+
+void EXTI13_IRQHandler(void) {
+    IRQ_ENTER(EXTI13_IRQn);
+    Handle_EXTI_Irq(13);
+    IRQ_EXIT(EXTI13_IRQn);
+}
+
+void EXTI14_IRQHandler(void) {
+    IRQ_ENTER(EXTI14_IRQn);
+    Handle_EXTI_Irq(14);
+    IRQ_EXIT(EXTI14_IRQn);
+}
+
+void EXTI15_IRQHandler(void) {
+    IRQ_ENTER(EXTI15_IRQn);
+    Handle_EXTI_Irq(15);
+    IRQ_EXIT(EXTI15_IRQn);
+}
+#endif
+
 void EXTI9_5_IRQHandler(void) {
     IRQ_ENTER(EXTI9_5_IRQn);
     Handle_EXTI_Irq(5);
@@ -556,7 +630,7 @@ void TAMP_STAMP_IRQHandler(void) {
 }
 #endif
 
-#if defined(STM32H5)
+#if defined(STM32H5) || defined(STM32U5)
 void RTC_IRQHandler(void)
 #else
 void RTC_WKUP_IRQHandler(void)
@@ -565,7 +639,7 @@ void RTC_WKUP_IRQHandler(void)
     IRQ_ENTER(RTC_WKUP_IRQn);
     #if defined(STM32G0) || defined(STM32G4) || defined(STM32WL)
     RTC->MISR &= ~RTC_MISR_WUTMF; // clear wakeup interrupt flag
-    #elif defined(STM32H5)
+    #elif defined(STM32H5) || defined(STM32U5)
     RTC->SCR = RTC_SCR_CWUTF; // clear wakeup interrupt flag
     #elif defined(STM32H7A3xx) || defined(STM32H7A3xxQ) || defined(STM32H7B3xx) || defined(STM32H7B3xxQ)
     RTC->SR &= ~RTC_SR_WUTF; // clear wakeup interrupt flag

@@ -55,6 +55,19 @@ static inline void i2c_slave_init(i2c_slave_t *i2c, int irqn, int irq_pri, int a
     RCC->APB1ENR1 |= 1 << (RCC_APB1ENR1_I2C1EN_Pos + i2c_idx);
     volatile uint32_t tmp = RCC->APB1ENR1; // Delay after enabling clock
     (void)tmp;
+    #elif defined(STM32U5)
+    volatile uint32_t tmp;
+    if (i2c_idx < 2) {  // I2C1 and I2C2
+        RCC->APB1ENR1 |= 1 << (RCC_APB1ENR1_I2C1EN_Pos + i2c_idx);
+        tmp = RCC->APB1ENR1; // Delay after enabling clock
+    } else if (i2c_idx == 2) {  // I2C3
+        RCC->APB3ENR |= 1 << (RCC_APB3ENR_I2C3EN_Pos);
+        tmp = RCC->APB3ENR; // Delay after enabling clock
+    } else {  // I2C4
+        RCC->APB1ENR2 |= 1 << (RCC_APB1ENR2_I2C4EN_Pos);
+        tmp = RCC->APB1ENR2; // Delay after enabling clock
+    }
+    (void)tmp;
     #endif
 
     i2c_slave_init_helper(i2c, addr);

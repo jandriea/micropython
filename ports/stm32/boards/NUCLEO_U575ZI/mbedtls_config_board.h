@@ -1,0 +1,10 @@
+#ifndef MICROPY_INCLUDED_MBEDTLS_CONFIG_BOARD_H
+#define MICROPY_INCLUDED_MBEDTLS_CONFIG_BOARD_H
+
+#define MBEDTLS_GCM_C
+#define MBEDTLS_CCM_C
+#define MBEDTLS_CMAC_C
+
+#include "ports/stm32/mbedtls/mbedtls_config_port.h"
+
+#endif /* MICROPY_INCLUDED_MBEDTLS_CONFIG_BOARD_H */
